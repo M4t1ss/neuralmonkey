@@ -35,6 +35,7 @@ class SentenceEncoder(ModelPart, Attentive):
                  max_input_len: int,
                  embedding_size: int,
                  rnn_size: int,
+                 attention_state_size: int,
                  dropout_keep_prob: float=1.0,
                  attention_type: Optional[AttType]=None,
                  attention_fertility: int=3,
@@ -66,7 +67,8 @@ class SentenceEncoder(ModelPart, Attentive):
         """
         ModelPart.__init__(self, name, save_checkpoint, load_checkpoint)
         Attentive.__init__(
-            self, attention_type, attention_fertility=attention_fertility)
+            self, attention_type, attention_fertility=attention_fertility,
+            attention_state_size=attention_state_size)
 
         self.vocabulary = vocabulary
         self.data_id = data_id
