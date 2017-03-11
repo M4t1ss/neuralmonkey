@@ -24,9 +24,10 @@ class BPEPreprocessor(object):
 
         separator = kwargs.get("separator", "@@")
         merge_file = kwargs["merge_file"]
+        merge_type = kwargs["merge_type"]
 
         with codecs.open(merge_file, "r", "utf-8") as f_data:
-            self.bpe = BPE(f_data, separator)
+            self.bpe = BPE(f_data, separator, merge_type)
 
     def __call__(self, sentence: List[str]) -> List[str]:
         """Adapted code from BPE.segment """
@@ -41,9 +42,27 @@ class BPEPreprocessor(object):
 
             new_word = encode(word, self.bpe.bpe_codes)
 
-            for item in new_word[:-1]:
-                output.append(item + self.bpe.separator)
-            output.append(new_word[-1])
+            if self.bpe.merge_type == 'prefix':
+                #Prefix
+                for item in new_word[:-1]:
+                    output.append(item + self.bpe.separator)
+                output.append(new_word[-1])
+
+            elif self.bpe.merge_type == 'suffix':
+                #Suffix
+                output.append(new_word[0])
+                for item in new_word[1:]:
+                    output.append(self.bpe.separator + item)
+
+            elif self.bpe.merge_type == 'both':
+                #Prefix & Suffix
+                if len(new_word) > 1:
+                    output.append('|@' + new_word[0] + self.bpe.separator)
+                    for item in new_word[1:-1]:
+                        output.append(self.bpe.separator + item + self.bpe.separator)
+                    output.append(self.bpe.separator + new_word[-1] + '@|')
+                else:
+                    output.append(new_word[0])
 
         return output
 
@@ -52,16 +71,33 @@ class BPEPostprocessor(object):
 
     def __init__(self, **kwargs):
         self.separator = kwargs.get("separator", "@@")
+        self.merge_type = kwargs["merge_type"]
 
         esc = re.escape(self.separator)
-        self.pattern = re.compile(esc + r" ")
+        esc2 = re.escape("|@")
+        esc3 = re.escape("@|")
+        if self.merge_type == 'prefix':
+            self.pattern = re.compile(esc + r" ")
+        elif self.merge_type == 'suffix':
+            self.pattern = re.compile(r" " + esc)
+        elif self.merge_type == 'both':
+            self.pattern = re.compile(r" " + esc)
+            self.pattern2 = re.compile(esc + r" ")
+            self.pattern3 = re.compile(esc2)
+            self.pattern4 = re.compile(esc3)
 
     def __call__(self, decoded_sentences: List[List[str]]) -> List[List[str]]:
         return [self.decode(s) for s in decoded_sentences]
 
     def decode(self, sentence: List[str]) -> List[str]:
         joined = " ".join(sentence)
-        decoded = self.pattern.sub("", joined)
+        if self.merge_type == 'both':
+            decoded = self.pattern.sub("", joined)
+            decoded = self.pattern2.sub("", decoded)
+            decoded = self.pattern3.sub("", decoded)
+            decoded = self.pattern4.sub("", decoded)
+        else:
+            decoded = self.pattern.sub("", joined)
         splitted = decoded.split(" ")
 
         return splitted

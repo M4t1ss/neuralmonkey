@@ -30,12 +30,13 @@ from collections import defaultdict
 
 class BPE(object):
 
-    def __init__(self, codes, separator='@@'):
+    def __init__(self, codes, separator='@@', merge_type='prefix'):
         self.bpe_codes = [tuple(item.split()) for item in codes]
         # some hacking to deal with duplicates (only consider first instance)
         self.bpe_codes = dict([(code,i) for (i,code) in reversed(list(enumerate(self.bpe_codes)))])
 
         self.separator = separator
+        self.merge_type = merge_type
 
     def segment(self, sentence):
         """segment single sentence (whitespace-tokenized string) with BPE encoding"""
@@ -44,9 +45,27 @@ class BPE(object):
         for word in sentence.split():
             new_word = encode(word, self.bpe_codes)
 
-            for item in new_word[:-1]:
-                output.append(item + self.separator)
-            output.append(new_word[-1])
+            if self.merge_type == 'prefix':
+                #Prefix
+                for item in new_word[:-1]:
+                    output.append(item + self.separator)
+                output.append(new_word[-1])
+
+            elif self.merge_type == 'suffix':
+                #Suffix
+                output.append(new_word[0])
+                for item in new_word[1:]:
+                    output.append(self.separator + item)
+
+            elif self.merge_type == 'both':
+                #Prefix and Suffix
+                if len(new_word) > 1:
+                    output.append('|@' + new_word[0] + self.separator)
+                    for item in new_word[1:-1]:
+                        output.append(self.separator + item + self.separator)
+                    output.append(self.separator + new_word[-1] + '@|')
+                else:
+                    output.append(new_word[0])
 
         return ' '.join(output)
 
@@ -70,6 +89,9 @@ def create_parser():
     parser.add_argument(
         '--separator', '-s', type=str, default='@@', metavar='STR',
         help="Separator between non-final subword units (default: '%(default)s'))")
+    parser.add_argument(
+        '--merge_type', '-t', type=str, default='suffix', metavar='STR',
+        help="Where to put the separator (default: '%(default)s'))")
 
     return parser
 
@@ -138,7 +160,7 @@ if __name__ == '__main__':
     parser = create_parser()
     args = parser.parse_args()
 
-    bpe = BPE(args.codes, args.separator)
+    bpe = BPE(args.codes, args.separator, args.merge_type)
 
     for line in args.input:
         args.output.write(bpe.segment(line).strip())
