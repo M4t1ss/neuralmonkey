@@ -167,12 +167,16 @@ def from_bpe(path: str, encoding: str="utf-8") -> 'Vocabulary':
             assert len(pair) == 2
 
             if pair[1].endswith("</w>"):
-                pair[1] = pair[1][:-4]
+                pair[1] = pair[1].replace('</w>','@|')
             else:
                 pair[1] += "@@"
+            if pair[0].startswith("<w>"):
+                pair[0] = pair[0].replace('<w>','|@')
+            else:
+                pair[0] = "@@"+pair[0]
 
             vocab.add_word(pair[0] + "@@")
-            vocab.add_word(pair[1])
+            vocab.add_word("@@" + pair[1])
             vocab.add_word("".join(pair))
 
     log("Vocabulary from BPE merges loaded. Size: {} subwords"
