@@ -85,6 +85,7 @@ class BPEPostprocessor(object):
             self.pattern2 = re.compile(esc + r" ")
             self.pattern3 = re.compile(esc2)
             self.pattern4 = re.compile(esc3)
+            self.pattern5 = re.compile(esc)
 
     def __call__(self, decoded_sentences: List[List[str]]) -> List[List[str]]:
         return [self.decode(s) for s in decoded_sentences]
@@ -96,6 +97,7 @@ class BPEPostprocessor(object):
             decoded = self.pattern2.sub("", decoded)
             decoded = self.pattern3.sub("", decoded)
             decoded = self.pattern4.sub("", decoded)
+            decoded = self.pattern5.sub("", decoded)
         else:
             decoded = self.pattern.sub("", joined)
         splitted = decoded.split(" ")

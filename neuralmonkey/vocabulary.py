@@ -142,7 +142,7 @@ def from_dataset(datasets: List[Dataset], series_ids: List[str], max_size: int,
     return vocabulary
 
 
-def from_bpe(path: str, encoding: str="utf-8") -> 'Vocabulary':
+def from_bpe(path: str, merge_type: str, encoding: str="utf-8") -> 'Vocabulary':
     """Loads vocabulary from Byte-pair encoding merge list.
 
     NOTE: The frequencies of words in this vocabulary are not computed from
@@ -166,17 +166,37 @@ def from_bpe(path: str, encoding: str="utf-8") -> 'Vocabulary':
             pair = line.split()
             assert len(pair) == 2
 
-            if pair[1].endswith("</w>"):
-                pair[1] = pair[1].replace('</w>','@|')
+            if merge_type == 'both':
+                if pair[1].endswith("</w>"):
+                    pair[1] = pair[1].replace('</w>','@|')
+                else:
+                    pair[1] += "@@"
+                if pair[0].startswith("<w>"):
+                    pair[0] = pair[0].replace('<w>','|@')
+                else:
+                    pair[0] = "@@"+pair[0]
+                vocab.add_word(pair[0] + "@@")
+                vocab.add_word("@@" + pair[1])
+            elif merge_type == 'suffix':
+                if pair[1].endswith("</w>"):
+                    pair[1] = pair[1].replace('</w>','')
+                if pair[0].startswith("<w>"):
+                    pair[0] = pair[0].replace('<w>','')
+                else:
+                    pair[0] = "@@"+pair[0]
+                vocab.add_word(pair[0] + "@@")
+                vocab.add_word("@@" + pair[1])
             else:
-                pair[1] += "@@"
-            if pair[0].startswith("<w>"):
-                pair[0] = pair[0].replace('<w>','|@')
-            else:
-                pair[0] = "@@"+pair[0]
+                if pair[0].startswith("<w>"):
+                    pair[0] = pair[0].replace('<w>','')
+                if pair[1].endswith("</w>"):
+                    pair[1] = pair[1][:-4]
+                else:
+                    pair[1] += "@@"
 
-            vocab.add_word(pair[0] + "@@")
-            vocab.add_word("@@" + pair[1])
+                vocab.add_word(pair[0] + "@@")
+                vocab.add_word(pair[1])
+
             vocab.add_word("".join(pair))
 
     log("Vocabulary from BPE merges loaded. Size: {} subwords"
