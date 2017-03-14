@@ -184,7 +184,6 @@ def from_bpe(path: str, merge_type: str, encoding: str="utf-8") -> 'Vocabulary':
                     pair[0] = pair[0].replace('<w>','')
                 else:
                     pair[0] = "@@"+pair[0]
-                vocab.add_word(pair[0] + "@@")
                 vocab.add_word("@@" + pair[1])
             else:
                 if pair[0].startswith("<w>"):

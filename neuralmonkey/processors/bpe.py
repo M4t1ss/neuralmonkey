@@ -80,6 +80,7 @@ class BPEPostprocessor(object):
             self.pattern = re.compile(esc + r" ")
         elif self.merge_type == 'suffix':
             self.pattern = re.compile(r" " + esc)
+            self.pattern5 = re.compile(esc)
         elif self.merge_type == 'both':
             self.pattern = re.compile(r" " + esc)
             self.pattern2 = re.compile(esc + r" ")
@@ -97,6 +98,9 @@ class BPEPostprocessor(object):
             decoded = self.pattern2.sub("", decoded)
             decoded = self.pattern3.sub("", decoded)
             decoded = self.pattern4.sub("", decoded)
+            decoded = self.pattern5.sub("", decoded)
+        elif self.merge_type == 'suffix':
+            decoded = self.pattern.sub("", joined)
             decoded = self.pattern5.sub("", decoded)
         else:
             decoded = self.pattern.sub("", joined)
