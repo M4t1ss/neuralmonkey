@@ -31,6 +31,7 @@ from collections import defaultdict
 class BPE(object):
 
     def __init__(self, codes, separator='@@', merge_type='prefix'):
+        sys.stderr.write('{0}\n'.format(merge_type))
         self.bpe_codes = [tuple(item.split()) for item in codes]
         # some hacking to deal with duplicates (only consider first instance)
         self.bpe_codes = dict([(code,i) for (i,code) in reversed(list(enumerate(self.bpe_codes)))])
@@ -90,7 +91,7 @@ def create_parser():
         '--separator', '-s', type=str, default='@@', metavar='STR',
         help="Separator between non-final subword units (default: '%(default)s'))")
     parser.add_argument(
-        '--merge_type', '-t', type=str, default='suffix', metavar='STR',
+        '--merge_type', '-t', type=str, default='prefix', metavar='STR',
         help="Where to put the separator (default: '%(default)s'))")
 
     return parser
@@ -114,7 +115,7 @@ def encode(orig, bpe_codes, cache={}):
     if orig in cache:
         return cache[orig]
 
-    word = tuple(orig) + ('</w>',)
+    word = ('<w>',) + tuple(orig) + ('</w>',)
     pairs = get_pairs(word)
 
     while True:
@@ -151,6 +152,11 @@ def encode(orig, bpe_codes, cache={}):
         word = word[:-1]
     elif word[-1].endswith('</w>'):
         word = word[:-1] + (word[-1].replace('</w>',''),)
+    # don't print beginning-of-word symbols
+    if word[0] == '<w>':
+        word = word[1:]
+    elif word[0].startswith('<w>'):
+        word = (word[0].replace('<w>',''),) + word[1:]
 
     cache[orig] = word
     return word

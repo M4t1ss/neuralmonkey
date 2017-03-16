@@ -198,6 +198,7 @@ def from_bpe(path: str, merge_type: str, encoding: str="utf-8") -> 'Vocabulary':
 
             vocab.add_word("".join(pair))
 
+    vocab.save_to_textfile("/ha/home/rikters/tools/neuralmonkey/experiment-zero/vocab.txt", True)
     log("Vocabulary from BPE merges loaded. Size: {} subwords"
         .format(len(vocab)))
     vocab.log_sample()
@@ -468,6 +469,17 @@ class Vocabulary(collections.Sized):
                     sentence.append(self.index_to_word[word_i])
 
         return [s[:-1] if s[-1] == END_TOKEN else s for s in sentences]
+        
+    def save_to_textfile(self, path: str, overwrite: bool=False) -> None:
+        """Get the size of the vocabulary.
+
+        Returns:
+            The number of distinct words in the vocabulary.
+        """
+        fle = open(path, 'w')
+        for i in range(0, len(self.index_to_word)):
+            fle.write(self.index_to_word[i] + "\n")
+        fle.close()
 
     def save_to_file(self, path: str, overwrite: bool=False) -> None:
         """Save the vocabulary to a file.
